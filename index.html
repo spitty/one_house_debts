@@ -119,13 +119,16 @@ var rect = svg.selectAll("flat")
             - psize; 
     });
 
+var tooltip_width = 100 + 10;
+var tooltip_height = font_size + 10;
+
 var tooltip = svg.append("g")
     .classed("invisible", true);
 
     tooltip
     .append("rect")
-    .attr("width", 100 + 10)
-    .attr("height", font_size + 10)
+    .attr("width", tooltip_width)
+    .attr("height", tooltip_height)
     .attr("x", 1)
     .attr("y", rsize/2 -(font_size + 10)/2)
     .classed("tooltip", true);
@@ -142,6 +145,34 @@ function mapColor(debt) {
             return mapDebtToColor[i][1];
         }
     }
+}
+
+function showTooltip(x, y, text) {
+    console.log("showTooltip (x,y):" + "(" + x + "," + y + ")");
+    var tc_x = x + rsize/2 + tooltip_width/2;
+    var tc_y = y + rsize/2;
+
+    if (tc_x + tooltip_width/2 > width) {
+        tc_x = x - rsize/2 - tooltip_width/2 - 2;
+    }
+
+
+    var g_x = tc_x - tooltip_width/2;
+    var g_y = tc_y - tooltip_height/2;
+
+
+    console.log("showTooltip (g_x,g_y):" + "(" + g_x + "," + g_y + ")");
+    tooltip
+        .attr("transform", "translate(" + g_x + ", " + g_y + ")")
+        .classed("invisible", false);
+    tooltip_text.text(text);
+}
+
+function hideTooltip() {
+    tooltip
+        .attr("transform", "translate(0, 0)")
+        .classed("invisible", true);
+    tooltip_text.text("");
 }
 
 d3.json("data.json", function(error, root) {
@@ -161,19 +192,12 @@ d3.json("data.json", function(error, root) {
         flat.on("mouseover", function(d) {
             var t = d3.select(this);
             console.log(t.attr("x") + ":" + t.attr("y"));
-            var x = parseInt(t.attr("x")) + psize;
-            var y = t.attr("y");
-            tooltip
-                .attr("transform", "translate(" + x + ", " + y + ")")
-                .classed("invisible", false);
-            tooltip_text.text(d["flatNo"] + ": " + d["debt"]);
+            var x = parseInt(t.attr("x")) + rsize / 2;
+            var y = parseInt(t.attr("y")) + rsize / 2;
+            var text = d["flatNo"] + ": " + d["debt"];
+            showTooltip(x, y, text);
         });
-        flat.on("mouseout", function() {
-            tooltip
-                .attr("transform", "translate(0, 0)")
-                .classed("invisible", true);
-            tooltip_text.text("");
-        });
+        flat.on("mouseout", hideTooltip);
 
     }
 });
