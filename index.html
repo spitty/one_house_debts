@@ -58,6 +58,13 @@
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script type="text/javascript">
 
+var debug = false;
+function log(text) {
+    if (debug) {
+        console.log(text);
+    }
+}
+
 mapDebtToColor = [
     [60000, 'level5'],
     [45000, 'level4'],
@@ -76,9 +83,24 @@ margin = 20;
 cols_cnt = 9 * 4;
 rows_cnt = 18;
 
-width = 2 * margin + psize * cols_cnt + porch_padding * 8;
-height = 2 * margin + psize * rows_cnt;
+var tooltip_width = 100 + 10;
+var tooltip_height = font_size + 10;
 
+width = 2 * margin + psize * cols_cnt + porch_padding * 8;
+height = 2 * margin + psize * rows_cnt
+    + tooltip_height + 2 * padding /* porch tooltip */
+;
+
+var porch_tooltip_y = margin + psize * rows_cnt + padding;
+function porch_tooltip_x(porchNum) {
+    return margin
+        + porchNum * (4 * psize + porch_padding)
+        + 2 * psize + padding/2;
+}
+
+function getPorch(flatNum) {
+    return Math.floor((flatNum-1)/72);
+}
 
 var legend = d3.select("body").append("svg")
     .attr("width", 100)
@@ -126,13 +148,10 @@ var rect = svg.selectAll("flat")
             - psize; 
     });
 
-var tooltip_width = 100 + 10;
-var tooltip_height = font_size + 10;
-
 var tooltip = svg.append("g")
     .classed("invisible", true);
 
-    tooltip
+tooltip
     .append("rect")
     .attr("width", tooltip_width)
     .attr("height", tooltip_height)
@@ -146,6 +165,23 @@ var tooltip_text =
     .attr("y", rsize/2 + font_size/2)
     .attr("x", 5);
 
+var porch_tooltip = svg.append("g")
+    .classed("invisible", true);
+
+porch_tooltip
+    .append("rect")
+    .attr("width", tooltip_width)
+    .attr("height", tooltip_height)
+    .attr("x", 1)
+    .attr("y", rsize/2 -(font_size + 10)/2)
+    .classed("tooltip", true);
+
+var porch_tooltip_text =
+    porch_tooltip
+    .append("text")
+    .attr("y", rsize/2 + font_size/2)
+    .attr("x", 5);
+
 function mapColor(debt) {
     for (i in mapDebtToColor) {
         if (debt > mapDebtToColor[i][0]) {
@@ -154,13 +190,35 @@ function mapColor(debt) {
     }
 }
 
-function showTooltip(x, y, text) {
-    console.log("showTooltip (x,y):" + "(" + x + "," + y + ")");
-    var tc_x = x + rsize/2 + tooltip_width/2;
-    var tc_y = y + rsize/2;
+function showTooltip(x, y, tooltipRef, text, position) {
+    if (typeof(position) === "undefined") {
+        position = "right";
+    }
 
-    if (tc_x + tooltip_width/2 > width) {
-        tc_x = x - rsize/2 - tooltip_width/2 - 2;
+    log("showTooltip (x,y):" + "(" + x + "," + y + ")");
+    var tc_x, tc_y;
+    switch(position) {
+        case "bottom":
+            tc_x = x + rsize/2;
+            tc_y = y + rsize/2 + tooltip_height/2;
+            break;
+        case "right":
+        default:
+            tc_x = x + rsize/2 + tooltip_width/2;
+            tc_y = y + rsize/2;
+
+            if (tc_x + tooltip_width/2 > width) {
+                tc_x = x - rsize/2 - tooltip_width/2 - 2;
+            }
+            break;
+    }
+
+    if(tc_x < tooltip_width / 2) {
+        tc_x = tooltip_width / 2;
+    }
+
+    if(tc_x > width - tooltip_width / 2) {
+        tc_x = width - tooltip_width / 2;
     }
 
 
@@ -168,18 +226,28 @@ function showTooltip(x, y, text) {
     var g_y = tc_y - tooltip_height/2;
 
 
-    console.log("showTooltip (g_x,g_y):" + "(" + g_x + "," + g_y + ")");
-    tooltip
+    log("showTooltip (g_x,g_y):" + "(" + g_x + "," + g_y + ")");
+    tooltipRef
         .attr("transform", "translate(" + g_x + ", " + g_y + ")")
         .classed("invisible", false);
-    tooltip_text.text(text);
+    tooltipRef.selectAll("text").text(text);
 }
 
-function hideTooltip() {
-    tooltip
+function showPorchTooltip(flatNum) {
+    var porchNum = Math.floor((flatNum - 1) / 72);
+
+}
+
+function hideTooltip(tooltipRef) {
+    tooltipRef
         .attr("transform", "translate(0, 0)")
         .classed("invisible", true);
-    tooltip_text.text("");
+    tooltipRef.selectAll("text").text("");
+}
+
+var porch_debts = {};
+for(var porchNum in d3.range(0,9)) {
+    porch_debts[porchNum] = 0.0;
 }
 
 d3.json("data.json", function(error, root) {
@@ -189,20 +257,32 @@ d3.json("data.json", function(error, root) {
         var debt = parseFloat(elem["debt"]);
         var flatNo = elem['flat'];
         
+        var porchNum = getPorch(flatNo);
+        porch_debts[porchNum] += debt;
+
         var flat = svg.selectAll("#f" + flatNo);
         
         flat.attr("class", "flat " + mapColor(debt));
         flat.data([{"flatNo":flatNo, "debt": debt}]);
         flat.on("mouseover", function(d) {
             var t = d3.select(this);
-            console.log(t.attr("x") + ":" + t.attr("y"));
+            log(t.attr("x") + ":" + t.attr("y"));
             var x = parseInt(t.attr("x")) + rsize / 2;
             var y = parseInt(t.attr("y")) + rsize / 2;
             var text = d["flatNo"] + ": " + d["debt"];
-            showTooltip(x, y, text);
+            showTooltip(x, y, tooltip, text);
+            var porchNum = getPorch(d["flatNo"]);
+            showTooltip(porch_tooltip_x(porchNum), porch_tooltip_y, porch_tooltip
+                , "Porch " + (porchNum + 1) + ": " + porch_debts[porchNum]
+                , "bottom");
         });
-        flat.on("mouseout", hideTooltip);
-
+        flat.on("mouseout", function() {
+            hideTooltip(tooltip);
+            hideTooltip(porch_tooltip);
+        });
+    }
+    for(var porchNum in porch_debts) {
+        porch_debts[porchNum] = Math.floor(porch_debts[porchNum]);
     }
 });
 
