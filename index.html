@@ -94,13 +94,6 @@ legend.selectAll("debt_text")
     .attr("y", function(d,i) { return margin + psize * (4 - i) + font_size; })
     .text(function(d) { return "> " + d[0]});
 
-var legend = legend.selectAll("text")
-    .data(d3.range(0, 5))
-    .enter().append("text")
-    .attr("x", psize + margin)
-    .attr("y", function(d) { return margin + psize * d + font_size; })
-    .text("level");
-
 d3.select("body").append("br");
 
 var svg = d3.select("body").append("svg")
