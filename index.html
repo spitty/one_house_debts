@@ -184,13 +184,10 @@ function hideTooltip() {
 
 d3.json("data.json", function(error, root) {
     if (error) throw error;
-    // console.log(root);
     for(x in root) {
         var elem = root[x];
         var debt = parseFloat(elem["debt"]);
         var flatNo = elem['flat'];
-
-        // console.log(flatNo + ", " + debt);
         
         var flat = svg.selectAll("#f" + flatNo);
         
