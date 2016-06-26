@@ -37,6 +37,14 @@
             font-family: Arial;
             font-size: 10pt;
         }
+        rect.tooltip {
+            fill: #FFFFFF;
+            stroke-width: 1;
+            stroke: rgb(0,0,0);
+        }
+        .invisible {
+            visibility: hidden;
+        }
     </style>
 </head>
 <body>
@@ -111,6 +119,23 @@ var rect = svg.selectAll("flat")
             - psize; 
     });
 
+var tooltip = svg.append("g")
+    .classed("invisible", true);
+
+    tooltip
+    .append("rect")
+    .attr("width", 100 + 10)
+    .attr("height", font_size + 10)
+    .attr("x", 1)
+    .attr("y", rsize/2 -(font_size + 10)/2)
+    .classed("tooltip", true);
+
+var tooltip_text =
+    tooltip
+    .append("text")
+    .attr("y", rsize/2 + font_size/2)
+    .attr("x", 5);
+
 function mapColor(debt) {
     for (i in mapDebtToColor) {
         if (debt > mapDebtToColor[i][0]) {
@@ -124,9 +149,32 @@ d3.json("data.json", function(error, root) {
     // console.log(root);
     for(x in root) {
         var elem = root[x];
-        console.log(elem['flat'] + ", " + elem["debt"]);
-        svg.selectAll("#f" + elem['flat'])
-        .attr("class", "flat " + mapColor(1.0 * elem["debt"]));
+        var debt = parseFloat(elem["debt"]);
+        var flatNo = elem['flat'];
+
+        // console.log(flatNo + ", " + debt);
+        
+        var flat = svg.selectAll("#f" + flatNo);
+        
+        flat.attr("class", "flat " + mapColor(debt));
+        flat.data([{"flatNo":flatNo, "debt": debt}]);
+        flat.on("mouseover", function(d) {
+            var t = d3.select(this);
+            console.log(t.attr("x") + ":" + t.attr("y"));
+            var x = parseInt(t.attr("x")) + psize;
+            var y = t.attr("y");
+            tooltip
+                .attr("transform", "translate(" + x + ", " + y + ")")
+                .classed("invisible", false);
+            tooltip_text.text(d["flatNo"] + ": " + d["debt"]);
+        });
+        flat.on("mouseout", function() {
+            tooltip
+                .attr("transform", "translate(0, 0)")
+                .classed("invisible", true);
+            tooltip_text.text("");
+        });
+
     }
 });
 
