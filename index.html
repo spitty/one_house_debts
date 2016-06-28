@@ -61,6 +61,7 @@ function getPorch(flatNum) {
     return Math.floor((flatNum-1)/72);
 }
 
+/* Legend block */
 var legend = d3.select("body").append("svg")
     .attr("width", 100)
     .attr("height", psize * 6 + margin * 2)
@@ -84,6 +85,7 @@ legend.selectAll("debt_text")
 
 d3.select("body").append("br");
 
+/* House block */
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
@@ -95,7 +97,6 @@ var rect = svg.selectAll("flat")
     .attr("width", rsize)
     .attr("height", rsize)
     .attr("class", "flat level0")
-    // .attr("fill", "#FFF")
     .attr("id", function(d) {return "f" + (d+1);})
     .attr("x", function(d) {
         return margin 
@@ -107,6 +108,7 @@ var rect = svg.selectAll("flat")
             - psize; 
     });
 
+/* Tooltip for flat */
 var tooltip = svg.append("g")
     .classed("invisible", true);
 
@@ -124,6 +126,7 @@ var tooltip_text =
     .attr("y", rsize/2 + font_size/2)
     .attr("x", 5);
 
+/* Tooltip for porch */
 var porch_tooltip = svg.append("g")
     .classed("invisible", true);
 
