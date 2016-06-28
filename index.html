@@ -24,6 +24,23 @@ function log(text) {
     }
 }
 
+function formatNumber(nStr)
+{
+    nStr += '';
+    x = nStr.split('.');
+    x1 = x[0];
+    x2 = x.length > 1
+        ? '.' + (x[1].length > 1
+            ? x[1].substr(0,2)
+            : x[1] + "0")
+        : '';
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(x1)) {
+        x1 = x1.replace(rgx, '$1' + ' ' + '$2');
+    }
+    return x1 + x2;
+}
+
 font_size = 10;
 
 rsize = 10;
@@ -91,7 +108,7 @@ function fill_legend(max_debt) {
 
     legend.append("text")
         .attr("id", "maxvalue")
-        .text(max_debt)
+        .text(formatNumber(max_debt))
         .attr("x", function() { return margin + color_scale_width - this.getBBox().width; })
         .attr("y", margin - padding)
         ;
@@ -131,7 +148,7 @@ function update_legend_tooltip(debt, max_debt) {
                 .replace(/#left#/g, left)
         );
     var l_tooltip_text = l_tooltip.select("#l_tooltip_text")
-        .text(debt)
+        .text(formatNumber(debt))
         .attr("y", 25 - (20 - font_size) / 2)
         .attr("x", function() { return left + 50 - this.getBBox().width / 2; });
 
@@ -301,17 +318,17 @@ d3.json("data.json", function(error, root) {
             log(t.attr("x") + ":" + t.attr("y"));
             var x = parseInt(t.attr("x")) + rsize / 2;
             var y = parseInt(t.attr("y")) + rsize / 2;
-            var text = d["flatNo"] + ": " + d["debt"];
+            var text = d["flatNo"] + ": " + formatNumber(d["debt"]);
             showTooltip(x, y, tooltip, text);
             var porchNum = getPorch(d["flatNo"]);
             showTooltip(porch_tooltip_x(porchNum), porch_tooltip_y, porch_tooltip
-                , "Porch " + (porchNum + 1) + ": " + porch_debts[porchNum]
+                , "№" + (porchNum + 1) + ": " + formatNumber(porch_debts[porchNum])
                 , "bottom");
             update_legend_tooltip(d["debt"], max_debt);
         });
         flat.on("mouseout", function() {
             hideTooltip(tooltip);
-            hideTooltip(porch_tooltip);
+            // hideTooltip(porch_tooltip);
         });
     }
     for(var porchNum in porch_debts) {
